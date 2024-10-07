@@ -1,4 +1,4 @@
-# MLP_fromscratch
+# mlp_fromscratch
 
 
 The global gradient of any layer is given by the dot product of the next global gradient with the next layer. The he result is multiplied element-wise by the derivative of the next activation function, as we can see on the formula bellow:
