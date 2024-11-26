@@ -280,34 +280,34 @@ class MLP:
     
 
     def _backprop(self, X, y):
-        '''Faz o backpropagatio.'''
+        '''Do the Backpropagation algorithm.'''
         
-        # inverte as listas
+        # reverse the lists
         layers = self.layers[::-1]
         archtecture = self.archtecture[::-1]
         activations = self.activations[::-1]
         bias = self.bias[::-1]
         
-        # incrementa o contador do adam
+        # increment the Adam time counter
         self.t += 1
 
         for l in range(len(layers)):
-            ### se for a camada de saída
+            ### if it's the last layer
             if l == 0:
                 J_a = self._loss_derivatives(name=self.loss, y_pred=activations[l], y_true=y)
                 a_z = self._activations_derivatives(a=activations[l], name=archtecture[l]['activation'])
                 z_theta = activations[l+1]
 
-                # calcula diferente o gradiente global para ativação softmax
+                # global gradient calculation is different for Softmax
                 if self.loss == 'categorical_crossentropy' and archtecture[l]['activation'] == 'softmax':
                     glob = np.einsum('ijk,ik->ij', a_z, J_a)
                 else:
                     glob = J_a * a_z
 
-                # cálculo do delta
+                # calculation of delta
                 delta = np.dot(glob.T, z_theta)
             
-            ### se for uma camada escondida
+            ### if the current layer is a hidden layer
             elif l > 0 and l < len(activations) - 1:
                 z_a = layers[l-1]
                 a_z = self._activations_derivatives(a=activations[l], name=archtecture[l]['activation'])
@@ -315,7 +315,7 @@ class MLP:
                 glob = np.dot(glob, z_a) * a_z
                 delta = np.dot(glob.T, z_theta)
             
-            ### se for a camada de entrada
+            ### if the current layer is the input layer
             else:
                 z_a = layers[l-1]
                 a_z = self._activations_derivatives(a=activations[l], name=archtecture[l]['activation'])
@@ -324,36 +324,36 @@ class MLP:
 
             ### Adam
             if self.optimizer == 'adam':
-                # inicialização das médias móveis e variância se necessário
+                # initialize moving averages and variance if necessary
                 if l not in self.m['theta']:
                     self.m['theta'][l] = np.zeros_like(delta)
                     self.v['theta'][l] = np.zeros_like(delta)
                     self.m['bias'][l] = np.zeros_like(bias[l])
                     self.v['bias'][l] = np.zeros_like(bias[l])
                 
-                # atualizar m e v para theta
+                # update m and v for theta
                 self.m['theta'][l] = self.beta1 * self.m['theta'][l] + (1 - self.beta1) * delta
                 self.v['theta'][l] = self.beta2 * self.v['theta'][l] + (1 - self.beta2) * (delta ** 2)
                 
-                # correção do bias para m e v
+                # bias correction for m and v
                 m_hat_theta = self.m['theta'][l] / (1 - self.beta1 ** self.t)
                 v_hat_theta = self.v['theta'][l] / (1 - self.beta2 ** self.t)
 
-                # atualizar pesos theta
+                # update weights theta
                 layers[l] = layers[l] - self.lr * m_hat_theta / (np.sqrt(v_hat_theta) + self.epsilon)
                 
-                # gradiente usado no bias
+                # gradient used for the bias
                 grad_bias = glob.T.sum(axis=1, keepdims=True)
                 
-                # atualizar m e v para bias
+                # update m and v for bias
                 self.m['bias'][l] = self.beta1 * self.m['bias'][l] + (1 - self.beta1) * grad_bias
                 self.v['bias'][l] = self.beta2 * self.v['bias'][l] + (1 - self.beta2) * (grad_bias ** 2)
                 
-                # correção do bias para o bias
+                # bias correction
                 m_hat_bias = self.m['bias'][l] / (1 - self.beta1 ** self.t)
                 v_hat_bias = self.v['bias'][l] / (1 - self.beta2 ** self.t)
 
-                # atualia o bias
+                # update the bias
                 bias[l] = bias[l] - self.lr * m_hat_bias / (np.sqrt(v_hat_bias) + self.epsilon)
             
             ### SGD
@@ -361,7 +361,7 @@ class MLP:
                 layers[l] = layers[l] - (self.lr * delta)
                 bias[l] = bias[l] - (self.lr * glob.T.sum(axis=1, keepdims=True))
 
-        # reverte as listas para a ordem original
+        # reverse the lists to the original order
         self.layers = layers[::-1]
         self.bias = bias[::-1]
         
